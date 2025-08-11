@@ -1,0 +1,49 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome - FinTrack</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand">
+        <img src="assets/logo.png" alt="Logo" class="logo">
+        <span class="brand-text">FinTrack</span><span class="brand-dot">●</span>
+      </a>
+      <nav class="nav">
+        <a href="login.html" class="nav-link">Login</a>
+        <a href="signup.html" class="nav-link">Sign Up</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="auth-wrap">
+    <div class="card" style="text-align:center;">
+      <h1 class="title">Welcome to FinTrack</h1>
+      <p class="hint">Track your income, expenses, and budgets with ease.</p>
+      <div style="margin-top:20px;">
+        <a href="login.html" class="btn btn-primary" style="width:auto; margin:5px;">Login</a>
+        <a href="signup.html" class="btn btn-primary" style="width:auto; margin:5px;">Sign Up</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="copyright" style="text-align:center;">
+        &copy; <span id="currentYear"></span> FinTrack. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>document.getElementById("currentYear").textContent=new Date().getFullYear();</script>
+</body>
+</html>
