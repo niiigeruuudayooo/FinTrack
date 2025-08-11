@@ -8,19 +8,26 @@ const jwt = require('jsonwebtoken');
 router.post('/signup', async (req, res) => {
   const { name, email, password } = req.body;
 
-  if (!name || !email || !password)
+  if (!name || !email || !password) {
     return res.status(400).json({ message: 'Please enter all fields' });
+  }
 
   try {
-    // check if already exists
+    // Check if user already exists
     const existing = await User.findOne({ email }).exec();
-    if (existing) return res.status(400).json({ message: 'User already exists' });
+    if (existing) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
 
-    // create new user
-    const user = new User({ name, email, password });
+    // Hash the password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create and save user
+    const user = new User({ name, email, password: hashedPassword });
     await user.save();
 
-    // sign token
+    // Create JWT payload
     const payload = { id: user._id, email: user.email };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
@@ -35,16 +42,24 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password)
+  if (!email || !password) {
     return res.status(400).json({ message: 'Please enter all fields' });
+  }
 
   try {
+    // Find user by email
     const user = await User.findOne({ email }).exec();
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
+    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
+    // Sign JWT
     const payload = { id: user._id, email: user.email };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 

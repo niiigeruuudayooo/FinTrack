@@ -8,8 +8,8 @@ dotenv.config();
 const app = express();
 
 // ===== Middleware =====
-app.use(cors()); // Allow cross-origin requests (adjust if needed for prod)
-app.use(express.json()); // Parse JSON bodies
+app.use(cors());
+app.use(express.json());
 
 // ===== API Routes =====
 const authRoutes = require('./routes/auth');
@@ -21,11 +21,9 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/budgets', budgetRoutes);
 
 // ===== Serve Frontend =====
-// In production, serve the built frontend files
-app.use(express.static(path.join(__dirname, 'frontend')));
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'dashboard.html')); 
-  // You can change default page if needed
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'dashboard.html'));
 });
 
 // ===== Error Handler =====
@@ -49,4 +47,3 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => {
   console.error('❌ MongoDB connection error:', err);
 });
-

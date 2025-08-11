@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Transaction = require('../models/Transactions'); // ✅ plural file name
-const auth = require('../middleware/auth');
+const auth = require('../middleware/authMiddleware');
 
 // GET all transactions for this user
 router.get('/', auth, async (req, res) => {
