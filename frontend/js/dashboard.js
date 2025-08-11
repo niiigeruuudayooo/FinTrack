@@ -1,110 +1,54 @@
-// ----------------------
-// Protect the dashboard
-// ----------------------
+// ===== Auth Protection =====
 const token = localStorage.getItem('token');
 if (!token) {
   window.location.href = 'login.html';
 }
 
-// ----------------------
-// Global chart instance
-// ----------------------
-let expenseChartInstance = null;
+// ===== Smart Category Filter =====
+const incomeCategories = [
+  "Salary", "Bonus", "Freelance", "Investments", "Other Income"
+];
+const expenseCategories = [
+  "Groceries", "Rent", "Utilities", "Transportation", "Dining Out",
+  "Entertainment", "Healthcare", "Education", "Travel", "Other Expense"
+];
 
-// ----------------------
-// Fetch transactions
-// ----------------------
-async function fetchTransactions() {
-  try {
-    const res = await fetch('/api/transactions', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) {
-      throw new Error('Failed to fetch transactions');
-    }
-    return await res.json();
-  } catch (err) {
-    console.error('Error fetching transactions:', err);
-    return [];
-  }
-}
+const typeSelect = document.getElementById('type');
+const categorySelect = document.getElementById('category');
 
-// ----------------------
-// Render transaction table
-// ----------------------
-function renderTransactionTable(transactions) {
-  const tbody = document.querySelector('#transactionsTable tbody');
-  tbody.innerHTML = '';
-
-  // Show latest 10 transactions
-  transactions.slice(0, 10).forEach(t => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${t.type}</td>
-      <td>$${t.amount.toFixed(2)}</td>
-      <td>${t.category}</td>
-      <td>${new Date(t.date).toLocaleDateString()}</td>
-      <td>${t.paymentMethod || ''}</td>
-    `;
-    tbody.appendChild(row);
+function populateCategoryOptions(categories) {
+  categorySelect.innerHTML = '<option value="">Select</option>';
+  categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    categorySelect.appendChild(opt);
   });
 }
 
-// ----------------------
-// Render / Update Chart.js smoothly
-// ----------------------
-function renderExpenseChart(transactions) {
-    const categoryTotals = {};
-  
-    transactions.forEach(t => {
-      if (t.type === 'expense') {
-        categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-      }
-    });
-  
-    const labels = Object.keys(categoryTotals);
-    const data = Object.values(categoryTotals);
-  
-    if (expenseChartInstance) {
-      // Update existing chart
-      expenseChartInstance.data.labels = labels;
-      expenseChartInstance.data.datasets[0].data = data;
-      expenseChartInstance.update();
-    } else {
-      // Create chart for the first time
-      const ctx = document.getElementById('expenseChart').getContext('2d');
-      expenseChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: { // ✅ Fixed: Added 'data' property key
-          labels: labels,
-          datasets: [{
-            label: 'Expenses by Category',
-            data: data, // ✅ Also fixed missing colon (optional, but clearer)
-            backgroundColor: 'rgba(255, 99, 132, 0.5)'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
+typeSelect?.addEventListener('change', () => {
+  if (typeSelect.value === 'income') {
+    populateCategoryOptions(incomeCategories);
+  } else if (typeSelect.value === 'expense') {
+    populateCategoryOptions(expenseCategories);
+  } else {
+    categorySelect.innerHTML = '<option value="">Select</option>';
   }
+});
 
-// ----------------------
-// Add New Transaction
-// ----------------------
+// ===== Add Transaction =====
 document.getElementById('transactionForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const type = document.getElementById('type').value;
+  const type = typeSelect.value;
   const amount = parseFloat(document.getElementById('amount').value);
-  const category = document.getElementById('category').value;
+  const category = categorySelect.value;
   const paymentMethod = document.getElementById('paymentMethod').value;
+
+  if (!type || !amount || !category || !paymentMethod) {
+    alert('Please fill in all fields.');
+    return;
+  }
 
   try {
     const res = await fetch('/api/transactions', {
@@ -121,11 +65,7 @@ document.getElementById('transactionForm')?.addEventListener('submit', async (e)
     if (res.ok) {
       alert('Transaction added successfully!');
       e.target.reset();
-
-      // Re-fetch and update table & chart
-      const transactions = await fetchTransactions();
-      renderTransactionTable(transactions);
-      renderExpenseChart(transactions);
+      loadDashboardData();
     } else {
       alert(data.message || 'Failed to add transaction');
     }
@@ -135,19 +75,115 @@ document.getElementById('transactionForm')?.addEventListener('submit', async (e)
   }
 });
 
-// ----------------------
-// Logout handler
-// ----------------------
+// ===== Fetch Transactions =====
+async function fetchTransactions() {
+  try {
+    const res = await fetch('/api/transactions', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch transactions');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+// ===== Render Transactions Table =====
+function renderTransactionsTable(transactions) {
+  const tbody = document.querySelector('#transactionsTable tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  transactions.forEach(tx => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${tx.type}</td>
+      <td>$${tx.amount.toFixed(2)}</td>
+      <td>${tx.category}</td>
+      <td>${new Date(tx.date || tx.createdAt).toLocaleDateString()}</td>
+      <td>${tx.paymentMethod || ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ===== Render Expense Chart =====
+function renderExpenseChart(transactions) {
+    const ctx = document.getElementById('expenseChart')?.getContext('2d');
+    if (!ctx) return;
+  
+    const expenseData = transactions
+      .filter(tx => tx.type === 'expense')
+      .reduce((acc, tx) => {
+        acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+        return acc;
+      }, {});
+  
+    const labels = Object.keys(expenseData);
+    const values = Object.values(expenseData);
+  
+    // Destroy previous chart if exists
+    if (window.expenseChart) window.expenseChart.destroy();
+  
+    window.expenseChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { // ✅ Added "data:"
+        labels: labels,
+        datasets: [{
+          data: values, // ✅ Changed "values" to "data"
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56',
+            '#4BC0C0', '#9966FF', '#FF9F40',
+            '#C9CBCF', '#8A8A8A', '#B5E48C', '#FF8C42'
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 20,
+              padding: 10
+            }
+          }
+        }
+      }
+    });
+  }
+  
+
+// ===== Calculate and Update Totals =====
+function updateTotals(transactions) {
+  const totalIncomeValue = transactions
+    .filter(tx => tx.type === 'income')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const totalExpensesValue = transactions
+    .filter(tx => tx.type === 'expense')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const balanceValue = totalIncomeValue - totalExpensesValue;
+
+  document.getElementById('totalIncome').textContent = `$${totalIncomeValue.toFixed(2)}`;
+  document.getElementById('totalExpenses').textContent = `$${totalExpensesValue.toFixed(2)}`;
+  document.getElementById('balance').textContent = `$${balanceValue.toFixed(2)}`;
+}
+
+// ===== Load Dashboard Data =====
+async function loadDashboardData() {
+  const transactions = await fetchTransactions();
+  renderTransactionsTable(transactions);
+  renderExpenseChart(transactions);
+  updateTotals(transactions);
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboardData);
+
+// ===== Logout =====
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   localStorage.removeItem('token');
   window.location.href = 'login.html';
 });
-
-// ----------------------
-// Initial page load
-// ----------------------
-(async () => {
-  const transactions = await fetchTransactions();
-  renderTransactionTable(transactions);
-  renderExpenseChart(transactions);
-})();
