@@ -30,22 +30,21 @@
 
     <div class="left-col">
       <!-- Account summary block for totals -->
-      <div class="dash-card key-stats">
-        <div class="stats-grid">
-          <div class="stat">
-            <span class="label">Total Income</span>
-            <span id="totalIncome" class="value">$0.00</span>
-          </div>
-          <div class="stat">
-            <span class="label">Total Expenses</span>
-            <span id="totalExpenses" class="value">$0.00</span>
-          </div>
-          <div class="stat">
-            <span class="label">Balance</span>
-            <span id="balance" class="value">$0.00</span>
-          </div>
+      <div class="summary-cards">
+        <div class="flash-card income-card">
+          <div class="card-label">Total Income</div>
+          <div id="totalIncome" class="card-value">$0.00</div>
+        </div>
+        <div class="flash-card expense-card">
+          <div class="card-label">Total Expenses</div>
+          <div id="totalExpenses" class="card-value">$0.00</div>
+        </div>
+        <div class="flash-card balance-card">
+          <div class="card-label">Balance</div>
+          <div id="balance" class="card-value">$0.00</div>
         </div>
       </div>
+      
 
       <!-- Updated Add Transaction card with dropdowns -->
       <div class="dash-card tx-add">
